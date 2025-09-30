@@ -1,3 +1,5 @@
+package com.example.tickerwatchlistmanager;
+
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -25,6 +27,10 @@ public class TickerViewModel extends ViewModel {
             v.add("DIS");
         }
         tickers.setValue(v);
+    }
+
+    public void select(String str){
+        selected.setValue(str);
     }
 
     public MutableLiveData<LinkedList<String>> getTickers() {
