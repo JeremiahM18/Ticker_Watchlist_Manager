@@ -19,9 +19,9 @@ public class InfoWebFragment extends Fragment {
     private WebView web;
     private TickerViewModel vm;
 
-    public InfoWebFragment() {
-        // Required empty public constructor
-    }
+//    public InfoWebFragment() {
+//        // Required empty public constructor
+//    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -48,7 +48,7 @@ public class InfoWebFragment extends Fragment {
         vm.getSelected().observe(getViewLifecycleOwner(), symbol -> {
             if(symbol != null && !symbol.isEmpty()){
                 ((WebView) view.findViewById(R.id.web))
-                        .loadUrl("https://seekingalpha.com/symbol/" + symbol);
+                        .loadUrl(seekingAlphaSymbol + symbol);
             }
         });
 

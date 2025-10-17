@@ -46,7 +46,11 @@ public class TickerViewModel extends ViewModel {
             return;
         }
 
-        LinkedList<String> v = new LinkedList<>();
+        LinkedList<String> v = tickers.getValue();
+        if(v == null){
+            v = new LinkedList<>();
+        }
+
         v.remove(str);
 
         if(v.size() < MAX){

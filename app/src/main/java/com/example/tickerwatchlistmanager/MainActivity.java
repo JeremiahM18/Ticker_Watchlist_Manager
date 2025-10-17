@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
         if(savedInstanceState == null){
             fg = getSupportFragmentManager();
             FragmentTransaction trans = fg.beginTransaction();
-            trans.add(R.id.listFragment, new ListFragment(), "TickerListFragmetn");
+            trans.add(R.id.listFragment, new ListFragment(), "TickerListFragment");
             trans.add(R.id.webFragment, new InfoWebFragment(), "InfoWebFragment");
             trans.commit();
         }
