@@ -19,7 +19,7 @@ public class ListFragment extends Fragment {
 
     private TickerViewModel vm;
     private ArrayAdapter<String> adapter;
-    private final ArrayList<String> data = new ArrayList<>();
+    //private final ArrayList<String> data = new ArrayList<>();
 
 
     public ListFragment() {
@@ -33,12 +33,12 @@ public class ListFragment extends Fragment {
 
         ListView listView = v.findViewById(R.id.tickerList);
         adapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_list_item_1, data);
+                android.R.layout.simple_list_item_1);
         listView.setAdapter(adapter);
 
         listView.setOnItemClickListener((parent, view, position, id) -> {
-            String symbol = data.get(position);
-            if(vm != null){
+            String symbol = adapter.getItem(position);
+            if(symbol != null){
                 vm.select(symbol);
             }
         });
@@ -53,15 +53,15 @@ public class ListFragment extends Fragment {
         vm = new ViewModelProvider(requireActivity()).get(TickerViewModel.class);
 
         vm.getTickers().observe(getViewLifecycleOwner(), this::render);
-
     }
 
     private void render(List<String> list){
-        data.clear();
-        int end = Math.min(list.size(), 6);
-        data.addAll(list.subList(0, end));
-        if(adapter != null){
-            adapter.notifyDataSetChanged();
+        if(list == null){
+            return;
         }
+        adapter.clear();
+        adapter.addAll(list);           // VM already enforces max = 6
+        adapter.notifyDataSetChanged();
+
     }
 }

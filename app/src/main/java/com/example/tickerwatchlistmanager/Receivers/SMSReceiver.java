@@ -3,20 +3,28 @@ package com.example.tickerwatchlistmanager.Receivers;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.widget.Toast;
 
 import com.example.tickerwatchlistmanager.MainActivity;
 
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class SMSReceiver extends BroadcastReceiver {
+
+    // Optional "Ticker:" prefix, letters only (1-5), case-insensitive
+    private static final Pattern TICKER_ENVELOPE =
+            Pattern.compile("(?i)(?:\\bTicker\\s*:\\s*)?<<\\s*([A-Za-z]{1,5})\\s*>>");
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (!Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) return;
+        if (intent == null ||
+                !Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(intent.getAction())) return;
 
-        // Rea message body safely (handles multi-part messages)
+        // Read full SMS (handles multi-part messages)
         SmsMessage[] msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
         StringBuilder body = new StringBuilder();
         if (msgs != null) {
@@ -28,26 +36,32 @@ public class SMSReceiver extends BroadcastReceiver {
         }
         String message = body.toString();
 
-        // Parse Ticker:<<...>>
-        ParseResult pr = parseTickerEnvelope(message);
+        // Try to extract the ticker
         String event;
         String ticker = null;
 
-        if (!pr.foundEnvelope) {
+        // Try regex match
+        if (message != null && !message.isEmpty()) {
+            Matcher mat = TICKER_ENVELOPE.matcher(message);
+            if (mat.find()) {
+                String captured = mat.group(1);
+                if (captured != null && !captured.trim().isEmpty()) {
+                    event = "valid_ticker";
+                    ticker = captured.trim().toUpperCase(Locale.US);
+                    Toast.makeText(context, "Added " + ticker + " to watchlist.", Toast.LENGTH_SHORT).show();
+                } else {
+                    event = "no_watchlist";   // nothing inside << >>
+                    Toast.makeText(context, "No valid watchlist entry found.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                event = "no_watchlist";      // envelope not found
+                Toast.makeText(context, "No valid watchlist entry found.", Toast.LENGTH_SHORT).show();
+            }
+        } else {
             event = "no_watchlist";
             Toast.makeText(context, "No valid watchlist entry found.", Toast.LENGTH_SHORT).show();
-        } else {
-            String norm = normalize(pr.rawInside);
-            if (isLettersOnly(norm) && norm.length() >= 1 && norm.length() <= 5) {
-                event = "valid_ticker";
-                ticker = norm;
-                Toast.makeText(context, "Adding " + ticker + " to watchlist...", Toast.LENGTH_SHORT).show();
-            } else {
-                event = "invalid_ticker";
-                Toast.makeText(context, "Invalid ticker: " + norm, Toast.LENGTH_SHORT).show();
-            }
         }
-
+        // Launch/bring-to-front MainActivity with result
         Intent launchIntent = new Intent(context, MainActivity.class);
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         launchIntent.putExtra("from_sms", true);
@@ -58,47 +72,5 @@ public class SMSReceiver extends BroadcastReceiver {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show();
         context.startActivity(launchIntent);
     }
-
-    private static ParseResult parseTickerEnvelope(String body) {
-        ParseResult r = new ParseResult();
-        if (body == null) return r;
-        int start = indexOfIgnoreCase(body, "Ticker:<<");
-        if (start < 0) return r;
-        int openEnd = start + "Ticker:<<".length();
-        int close = body.indexOf(">>", openEnd);
-        if (close < 0) return r;
-        r.foundEnvelope = true;
-        r.rawInside = body.substring(openEnd, close).trim();
-        return r;
-    }
-
-    private static int indexOfIgnoreCase(String hay, String needle) {
-        int hLen = hay.length();
-        int nLen = needle.length();
-        for (int i = 0; i <= hLen - nLen; i++) {
-            if (hay.regionMatches(true, i, needle, 0, nLen)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private static String normalize(String s) {
-        return s == null ? "" : s.trim().toUpperCase();
-    }
-
-    private static boolean isLettersOnly(String s) {
-        if (s == null || s.isEmpty()) return false;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c < 'A' || c > 'Z') return false;
-        }
-        return true;
-    }
-
-        private static class ParseResult {
-            boolean foundEnvelope;
-            String rawInside;
-        }
-    }
+}
 
